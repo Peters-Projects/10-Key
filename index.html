@@ -1,0 +1,702 @@
+<!DOCTYPE html>
+<html lang="en-US">
+<head>
+<title>10-Key Check Counter</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta name="author" content="Peter Furmonavicius">
+<meta name="KeyWords" content="10-Key Check Counter">
+<meta name="Description" content="St George Financial Ministry 10-Key Check Counter">
+
+<!-- Link the manifest -->
+<link rel="manifest" href="manifest.json">
+
+<!-- Apple Web App Capable tags -->
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="default">
+<meta name="apple-mobile-web-app-title" content="Keypad">
+
+<!-- Register the service worker via JavaScript -->
+<script>
+  if ('serviceWorker' in navigator) {
+    navigator.serviceWorker.register('./sw.js')
+      .then(() => console.log('Service Worker Registered'))
+      .catch((err) => console.log('Service Worker Failed', err));
+  }
+</script>
+
+<style>
+    :root {
+	--rw-color: #032653;
+	--rw-font: 'Roboto Flex';
+    --bg-color: #f4f4f7;
+    --card-bg: #ffffff;
+    --text-color: #032653;
+    --btn-bg: #e5e5ea;
+    --btn-active: #d1d1d6;
+    --primary: #007aff;
+    --danger: Red;
+    --secondary: #5856d6;
+}
+/* 1. Define local TTF font */
+@font-face {
+  font-family: 'MyCalculatorFont';
+  font-style: normal;
+  font-weight: normal;
+  src: url('VT323-Regular.ttf') format('truetype');
+}
+body {
+    align-items: center;
+    background-color: var(--bg-color);
+    box-sizing: border-box;
+    color: var(--text-color);
+    display: flex;
+	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+    justify-content: center;
+    margin: 0;
+    min-height: 100vh;
+    padding: 20px;
+}
+.app-container {
+	background: linear-gradient(135deg, #f0f2f5, #d9dee4);
+	border-radius: 16px;
+	border: 5px solid #8e9687;
+	/* Thick outer 3D bevel and heavy desk shadow */
+  	box-shadow:
+    	inset 2px 2px 0px rgba(255,255,255,0.6),
+    	inset -2px -2px 0px rgba(0,0,0,0.2),
+    	0 15px 35px rgba(0,0,0,0.4);
+    display: flex;
+    flex-direction: column;
+    gap: 15px;
+	padding: 25px;
+	width: 384px;
+}
+.app-title {
+    color: var(--text-color);
+	font-family: Georgia, serif;
+    font-size: 1.0rem;
+    font-weight: bold;
+  	letter-spacing: 0.75px;
+    text-transform: uppercase;
+    text-align: center;
+}
+.dashboard {
+    background: var(--bg-color);
+    border: 4px double;
+    border-radius: 12px;
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    padding: 15px;
+}
+.row {
+    align-items: center;
+    display: flex;
+    justify-content: space-between;
+}
+.label {
+    color: var(--rw-color);
+    font-weight: 700;
+}
+.value {
+    font-size: 1.2rem;
+    font-weight: 600;
+}
+#total {
+    color: #000;
+    font-size: 1.4rem;
+    font-weight: 700;
+}
+#input-display {
+    color: Green;
+    font-size: 1.4rem;
+    font-weight: 700;
+}
+#history-box, #breakdown-box {
+    scroll-behavior: smooth;
+}
+.data-container {
+	align-items: flex-start;
+	/* Lighter, more vibrant light gray-green LCD tone */
+	background-color: #dbe3de;
+	/* Reduced border-radius to match the thinner frame */
+	border-radius: 2px;
+	/* A lighter, softer matte plastic bezel border */
+	border: 2px solid #555555;
+  	/* Inner Screen Glow (Box Shadow) */
+	box-shadow: inset 0px 0px 15px rgba(0, 0, 0, 0.3);
+	box-sizing: border-box;
+	display: flex;
+	height: 95px;
+	justify-content: space-evenly;
+	overflow-y: auto;
+	padding: 0 12px;
+	position: relative;
+}
+/* Width of the scrollbar */
+.data-container::-webkit-scrollbar {
+	width: 6px;
+}
+/* The background track of the scrollbar (matches LCD screen) */
+.data-container::-webkit-scrollbar-track {
+	background: #dbe3de;
+	box-shadow: inset 1px 0px 3px rgba(0, 0, 0, 0.1);
+}
+/* The draggable thumb (matches bezel frame) */
+.data-container::-webkit-scrollbar-thumb {
+	background: #555555;
+	border-radius: 3px;
+}
+/* Darkens slightly when you hover over it */
+.data-container::-webkit-scrollbar-thumb:hover {
+	background: #333333;
+}
+.screen-value {
+	/* Faded charcoal color used for passive LCD matrix pixels */
+	color: #2b302e;
+    /* Monospace font paired with tight letter spacing creates a pixel-grid look */
+	font-family: "MyCalculatorFont", "Courier New", Courier, monospace;
+	font-size: 1.4rem;
+	font-weight: 900;
+	letter-spacing: -0.5px;
+    /* Ghosting effect mimicking a real liquid crystal panel */
+	text-shadow: 1px 1px 1px rgba(255, 255, 255, 0.4);
+}
+.container-title {
+    color: #888;
+    display: flex;
+    font-size: 0.8rem;
+    font-weight: bold;
+  	justify-content: space-between;
+    margin-bottom: 8px;
+    text-transform: uppercase;
+}
+.list-item {
+    align-items: center;
+    display: flex;
+    font-size: 1.4rem;
+    justify-content: space-between;
+    padding: 2px 0;
+}
+.list-item:last-child {
+    border-bottom: none;
+}
+.item-right-side {
+    align-items: center;
+    display: flex;
+    gap: 10px;
+}
+.hidden {
+    display: none !important;
+}
+.keyboard {
+    display: grid;
+    gap: 10px;
+    grid-template-columns: repeat(3, 1fr);
+}
+.btn {
+	border: 0.125em solid var(--rw-color); /* Dark border: solid Rollwood Blue */
+    border-radius: 10px;
+    /* 3D mechanical button effect */
+    box-shadow:
+        inset 1px 1px 0px rgba(255, 255, 255, 0.8), /* Inner top/left highlight */
+        inset -1px -1px 0px rgba(0, 0, 0, 0.3),    /* Inner bottom/right shadow */
+        0 4px 0px #888888,                         /* Outer depth */
+        0 6px 10px rgba(0, 0, 0, 0.4);             /* Outer drop shadow */
+	/* Smooth transitions for a premium feel */
+    transition: box-shadow 0.1s ease, transform 0.1s ease;
+}
+.action-btn {
+    background-color: var(--rw-color);
+    color: #fff;
+    cursor: pointer;
+    font-size: 1rem;
+    font-weight: 600;
+    padding: 12px;
+}
+.action-btn:hover {
+    background-color: rgba(88, 86, 214, 0.1);
+    color: var(--rw-color);
+}
+.number-btn {
+    background-color: var(--btn-bg);
+    color: #000;
+    cursor: pointer;
+    font-size: 2.5rem;
+    font-weight: 500;
+    padding: 5px;
+    touch-action: manipulation; /* FIX: Disables double-tap zoom */
+}
+/* Hover effect */
+.number-btn:hover {
+	background-color: rgba(144, 238, 144, 0.1);
+}
+/* Pressed state (Adding machine push) */
+.number-btn:active {
+	background-color: var(--btn-active);
+    box-shadow:
+        inset 1px 1px 2px rgba(0, 0, 0, 0.4),      /* Reversed inner shadow */
+        inset -1px -1px 0px rgba(255, 255, 255, 0.2), /* Reversed inner highlight */
+        0 0px 0px #888888;
+	transform: translateY(4px); /* Moves the button down */
+}
+.number-btn.clear {
+	background-color: rgba(255, 59, 48, 0.15);
+    color: var(--danger);
+}
+.number-btn.clear:active {
+	background-color: rgba(255, 59, 48, 0.3);
+}
+/* Base style for the Enter key (unpressed state) */
+.enter-btn {
+    background-color: Green;
+    color: White;
+    font-size: 1.1rem;
+    font-weight: 600;
+    grid-column: span 3;
+    padding: 15px;
+    touch-action: manipulation; /* FIX: Disables double-tap zoom */
+}
+/* Hover effect (subtle brightness change) */
+.enter-btn:hover {
+    background-color: LightGreen;
+    color: Green;
+}
+/* SINK EFFECT: Triggers exactly while the key is held down */
+.enter-btn:active {
+  /* Flatten the ambient shadow since the key is now flush with the board */
+    box-shadow:
+        inset 1px 1px 2px rgba(0, 0, 0, 0.4),      /* Reversed inner shadow */
+        inset -1px -1px 0px rgba(255, 255, 255, 0.2), /* Reversed inner highlight */
+        0 0px 0px #888888;
+	/* Move the key down by 4 pixels */
+	transform: translateY(4px);
+}
+.enter-btn:disabled {
+    background-color: Green;
+    cursor: not-allowed;
+}
+.enter-btn:disabled:hover {
+    background-color: Green;
+    cursor: not-allowed;
+}
+.clear-all-btn {
+    background-color: Red;
+    color: White;
+    cursor: pointer;
+    font-size: 0.9rem;
+    margin-top: 5px;
+    padding: 5px;
+    text-align: center;
+    width: 8em;
+    text-shadow:
+    	-1px -1px 0 var(--rw-color),
+    	1px -1px 0 var(--rw-color),
+    	-1px  1px 0 var(--rw-color),
+     	1px  1px 0 var(--rw-color);
+  	/* Smooth transition effect */
+  	transition: box-shadow 0.3s ease;
+}
+.clear-all-btn:hover {
+	/* Blends deep red, bright red, and soft pink-red coral */
+  	box-shadow:
+    	0 0 10px #8b0000,
+    	0 0 20px #ff0000,
+    	0 0 30px #ff6f61;
+}
+.delete-btn {
+    background: none;
+    border-radius: 4px;
+    border: none;
+    color: var(--danger);
+    cursor: pointer;
+    font-size: 0.9rem;
+    font-weight: bold;
+    padding: 2px 6px;
+    margin-left: 1rem;
+}
+.delete-btn:hover {
+    background-color: rgba(255, 59, 48, 0.1);
+}
+/* Hidden by default, covers the full screen */
+.easter-egg-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100vw;
+    height: 100vh;
+    background-color: rgba(0, 0, 0, 0.8); /* Darkens the background */
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 9999; /* Keeps it on top of everything else */
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.3s ease; /* Smooth fade-in effect */
+}
+
+/* Becomes visible when the 'active' class is added via JS */
+.easter-egg-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* Optional: Style the image size */
+.easter-egg-overlay img {
+    max-width: 100%;
+    max-height: 80%;
+    border: 2rem solid White;
+    border-radius: 10px;
+    bbox-shadow: 0 4px 20px rgba(0,0,0,0.5);
+    bbox-shadow: 0 4px 20px Red;
+}
+</style>
+</head>
+
+<body>
+
+<div class="app-container">
+    <div class="app-title">St George - 10-Key Check Counter</div>
+
+    <!-- Dashboard Display -->
+    <div class="dashboard">
+        <div class="row">
+            <span class="label">Total:</span>
+            <span id="total">0</span>
+        </div>
+        <div class="row">
+            <span class="label">Checks:</span>
+            <span id="count" class="value">0</span>
+        </div>
+        <div class="row">
+            <span class="label">Input:</span>
+            <span id="input-display">0</span>
+        </div>
+    </div>
+
+    <!-- Dynamic Display Panels -->
+    <div id="history-box" class="data-container">
+        <div class="container-title"> </div>
+        <div id="history-list" class="screen-value"></div>
+    </div>
+
+    <div id="breakdown-box" class="data-container hidden">
+        <div class="container-title"><span> </span> <span> </span></div>
+        <div id="breakdown-list" class="screen-value"></div>
+    </div>
+
+    <!-- View Toggle Button -->
+    <button id="toggle-view-btn" class="btn action-btn" onclick="toggleView()">SHOW SUMMARY</button>
+
+    <!-- 10-Key Pad -->
+    <div class="keyboard">
+        <button class="btn number-btn" onclick="press('7')">7</button>
+        <button class="btn number-btn" onclick="press('8')">8</button>
+        <button class="btn number-btn" onclick="press('9')">9</button>
+
+        <button class="btn number-btn" onclick="press('4')">4</button>
+        <button class="btn number-btn" onclick="press('5')">5</button>
+        <button class="btn number-btn" onclick="press('6')">6</button>
+
+        <button class="btn number-btn" onclick="press('1')">1</button>
+        <button class="btn number-btn" onclick="press('2')">2</button>
+        <button class="btn number-btn" onclick="press('3')">3</button>
+
+        <button class="btn number-btn" onclick="press('.')">.</button>
+        <button class="btn number-btn" onclick="press('0')">0</button>
+        <button class="btn number-btn clear" onclick="press('C')">C</button>
+
+        <button id="enter" class="btn enter-btn" onclick="submitEntry()">ENTER</button>
+    </div>
+
+    <button class="btn clear-all-btn" onclick="resetAll()">CLEAR ALL</button>
+</div>
+
+<script>
+console.log("Script loaded!");
+
+    // State variables
+    let history = [];
+    let currentInput = "";
+    let showingBreakdown = false;
+
+    // Elements
+    const inputDisplay = document.getElementById("input-display");
+    const totalDisplay = document.getElementById("total");
+    const countDisplay = document.getElementById("count");
+    const historyList = document.getElementById("history-list");
+    const breakdownList = document.getElementById("breakdown-list");
+    const enterBtn = document.getElementById("enter");
+    const historyBox = document.getElementById("history-box");
+    const breakdownBox = document.getElementById("breakdown-box");
+    const toggleViewBtn = document.getElementById("toggle-view-btn");
+
+    function press(char) {
+    	// play audible click sound after number key press
+    	playMechanicalClick();
+
+        if (char === 'C') {
+            currentInput = "";
+        } else if (char === '.') {
+            if (!currentInput.includes('.')) {
+                currentInput += currentInput === "" ? "0." : ".";
+            }
+        } else {
+            currentInput += char;
+        }
+        updateUI();
+    }
+
+    function submitEntry() {
+      	// Debug line: This will print the value to your browser's developer console
+  		console.log("Current Input Value:", currentInput);
+  		
+    	// play audible click sound after number key press
+    	playEnterClick();
+    	
+        if (currentInput === "") return;
+        
+        // 🥚 EASTER EGG CHECK
+    	// Change to whatever secret keypad number you want
+    	if (currentInput === "053169") { 
+        	triggerEasterEgg();
+        	currentInput = ""; // Clear the input
+        	updateUI();
+        	return; // Stop the function here so it doesn't save to history
+    		}
+    			
+                const value = parseFloat(currentInput);
+        if (!isNaN(value)) {
+            history.push(value);
+            currentInput = "";
+            updateUI();
+
+            // AUTOMATICALLY SCROLL BASED ON CURRENT VIEW
+            if (!showingBreakdown) {
+                scrollToBottom(historyBox); // History active -> Go to bottom
+            } else {
+                breakdownBox.scrollTop = 0;   // Summary active -> Go to top
+            }
+        }
+    }
+
+// Helper function to show and hide the image
+function triggerEasterEgg() {
+    const eggImage = document.getElementById("easterEggImage");
+    
+    // Show the image overlay
+    eggImage.classList.add("active");
+    
+    // Hide the image automatically after 3 seconds (3000 milliseconds)
+    setTimeout(() => {
+        eggImage.classList.remove("active");
+    }, 3000); 
+}
+
+    // NEW FUNCTION: Removes a single historical entry by its array position index
+    function deleteEntry(index) {
+        history.splice(index, 1);
+        updateUI();
+    }
+
+    function toggleView() {
+        showingBreakdown = !showingBreakdown;
+        if (showingBreakdown) {
+            historyBox.classList.add("hidden");
+            breakdownBox.classList.remove("hidden");
+            toggleViewBtn.innerText = "SHOW HISTORY";
+            // SNAP SUMMARY TO TOP
+            breakdownBox.scrollTop = 0; 
+        } else {
+            breakdownBox.classList.add("hidden");
+            historyBox.classList.remove("hidden");
+            toggleViewBtn.innerText = "SHOW SUMMARY";
+            // SNAP HISTORY TO BOTTOM
+            scrollToBottom(historyBox);
+        }
+        updateUI();
+    }
+
+    function resetAll() {
+        if (confirm("Are you sure you want to clear all data?")) {
+            history = [];
+            currentInput = "";
+            updateUI();
+        }
+    }
+
+    function updateUI() {
+        inputDisplay.innerText = currentInput === "" ? "0" : currentInput;
+
+        const total = history.reduce((sum, num) => sum + num, 0);
+        totalDisplay.innerText = formatNumber(total);
+        countDisplay.innerText = history.length;
+
+        enterBtn.disabled = currentInput === "";
+
+        // Render History Items with individual inline action buttons
+        historyList.innerHTML = "";
+        history.forEach((num, index) => {
+            const item = document.createElement("div");
+            item.className = "list-item";
+            item.innerHTML = `
+                <span>(${index + 1}) &nbsp;</span>
+                <div class="item-right-side">
+                    <strong>${formatNumber(num)}</strong>
+                    <button class="btn delete-btn" onclick="deleteEntry(${index})" title="Delete entry">✕</button>
+                </div>
+            `;
+            historyList.appendChild(item);
+        });
+
+        renderBreakdown();
+    }
+
+    function renderBreakdown() {
+        breakdownList.innerHTML = "";
+
+        const counts = {};
+        history.forEach(num => {
+            counts[num] = (counts[num] || 0) + 1;
+        });
+
+		// const sortedEntries = Object.entries(counts).sort((a, b) => parseFloat(b[0]) - parseFloat(a[0]));
+		// This sorts the items from smallest number to largest number
+		const sortedEntries = Object.entries(counts).sort((a, b) => parseFloat(a[0]) - parseFloat(b[0]));
+
+        if (sortedEntries.length === 0) {
+            breakdownList.innerHTML = `<div style="color: #888; text-align: center; padding-top: 10px;">No checks yet</div>`;
+            return;
+        }
+
+		sortedEntries.forEach(([num, count]) => {
+    	const item = document.createElement("div");
+    	item.className = "list-item";
+
+    	const paddedCount = String(count).padStart(2, '\u00A0');
+
+		item.innerHTML = `
+			<div style="display: flex; width: 100%; justify-content: flex-end; align-items: center;">
+    			<div style="display: flex; width: 140px; align-items: center; justify-content: space-between;">
+        			<span style="width: 50px; text-align: right;">${formatNumber(parseFloat(num))}</span>
+        			<span style="flex-grow: 1; text-align: right; color: #888; padding-right: 6px;">.....</span>
+        			<span style="text-align: right; min-width: 30px;">${paddedCount}</span>
+    			</div>
+			</div>
+`		;
+    	breakdownList.appendChild(item);
+		});
+    }
+
+    function formatNumber(num) {
+        return new Intl.NumberFormat('en-US', { maximumFractionDigits: 4 }).format(num);
+    }
+
+    function scrollToBottom(element) {
+        element.scrollTop = element.scrollHeight;
+    }
+
+    document.addEventListener('keydown', (event) => {
+        const key = event.key;
+        if ((key >= '0' && key <= '9') || key === '.') {
+            press(key);
+        } else if (key === 'Enter') {
+            submitEntry();
+        } else if (key === 'Escape' || key.toLowerCase() === 'c') {
+            press('C');
+        }
+    });
+
+    updateUI();
+</script>
+<script>
+let audioCtx = null;
+
+function playMechanicalClick() {
+  // Ensure AudioContext is active
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  if (audioCtx.state === 'suspended') {
+    audioCtx.resume();
+  }
+
+  const now = audioCtx.currentTime;
+
+  // Create nodes
+  const osc = audioCtx.createOscillator();
+  const gainNode = audioCtx.createGain();
+
+  // Connect nodes
+  osc.connect(gainNode);
+  gainNode.connect(audioCtx.destination);
+
+  // Use a triangle wave—it sounds woodier and more organic than a beep
+  osc.type = 'triangle';
+
+  // Simulate the mechanical drop: pitch starts high (click) and drops instantly (thud)
+  osc.frequency.setValueAtTime(1200, now); 
+  osc.frequency.exponentialRampToValueAtTime(120, now + 0.01); 
+
+  // Rapid volume decay
+  gainNode.gain.setValueAtTime(0.6, now);
+  gainNode.gain.exponentialRampToValueAtTime(0.001, now + 0.04); // Total sound lasts 40ms
+
+  // Start and stop
+  osc.start(now);
+  osc.stop(now + 0.04);
+}
+</script>
+<script>
+function playEnterClick() {
+  if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  if (audioCtx.state === 'suspended') audioCtx.resume();
+
+  const now = audioCtx.currentTime;
+
+  // --- LAYER 1: THE HEAVY PLASTIC CLACK ---
+  const osc1 = audioCtx.createOscillator();
+  const gain1 = audioCtx.createGain();
+  
+  osc1.connect(gain1);
+  gain1.connect(audioCtx.destination);
+  
+  osc1.type = 'triangle'; // Gives a solid, hollow wood/plastic thud
+  osc1.frequency.setValueAtTime(500, now); // Low pitch
+  osc1.frequency.exponentialRampToValueAtTime(60, now + 0.03); // Drops fast
+  
+  gain1.gain.setValueAtTime(0.8, now);
+  gain1.gain.exponentialRampToValueAtTime(0.001, now + 0.06);
+
+  // --- LAYER 2: THE METALLIC RESONANCE (THE "PING") ---
+  const osc2 = audioCtx.createOscillator();
+  const gain2 = audioCtx.createGain();
+  
+  osc2.connect(gain2);
+  gain2.connect(audioCtx.destination);
+  
+  osc2.type = 'sine'; // Pure tone for metallic spring resonance
+  osc2.frequency.setValueAtTime(1400, now); // High-pitched ring
+  
+  // Give the metallic ring a slight volume swell to simulate keyboard case echo
+  gain2.gain.setValueAtTime(0.0, now);
+  gain2.gain.linearRampToValueAtTime(0.15, now + 0.01); // Quick swell
+  gain2.gain.exponentialRampToValueAtTime(0.001, now + 0.15); // Long, lingering fade (150ms)
+
+  // Start and stop both layers
+  osc1.start(now);
+  osc1.stop(now + 0.06);
+  
+  osc2.start(now);
+  osc2.stop(now + 0.15);
+}
+</script>
+
+<div id="easterEggImage" class="easter-egg-overlay">
+    <!-- Replace with your actual image URL -->
+    <img src="paynoatt.png" alt="Surprise!">
+</div>
+
+</body>
+</html>
