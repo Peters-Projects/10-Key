@@ -26,17 +26,15 @@
 </script>
 
 <style>
-    :root {
+:root {
 	--rw-color: #032653;
 	--rw-font: 'Roboto Flex';
-    --bg-color: #f4f4f7;
-    --card-bg: #ffffff;
-    --text-color: #032653;
+    --bg-color: Gainsboro;
+	--dash-color: LightYellow;
+	--text-color: #032653;
     --btn-bg: #e5e5ea;
     --btn-active: #d1d1d6;
-    --primary: #007aff;
     --danger: Red;
-    --secondary: #5856d6;
 }
 /* 1. Define local TTF font */
 @font-face {
@@ -49,7 +47,6 @@ body {
     align-items: center;
     background-color: var(--bg-color);
     box-sizing: border-box;
-    color: var(--text-color);
     display: flex;
 	font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
     justify-content: center;
@@ -82,8 +79,8 @@ body {
     text-align: center;
 }
 .dashboard {
-    background: var(--bg-color);
-    border: 4px double;
+    background: var(--dash-color);
+    border: 4px double #555555;
     border-radius: 12px;
     display: flex;
     flex-direction: column;
@@ -100,6 +97,7 @@ body {
     font-weight: 700;
 }
 .value {
+    color: #000;
     font-size: 1.2rem;
     font-weight: 600;
 }
