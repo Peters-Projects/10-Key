@@ -694,6 +694,33 @@ function playEnterClick() {
   osc2.stop(now + 0.15);
 }
 </script>
+<script>
+// Automatically unlock the AudioContext on the first iPhone screen touch
+document.addEventListener('touchstart', function unlockContext() {
+  // Initialize the context if it hasn't been created yet
+  if (!audioCtx) {
+    audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+  }
+  
+  // Force start the context
+  if (audioCtx.state === 'suspended') {
+    audioCtx.resume().then(() => {
+      // Create a short, silent sound buffer to completely satisfy iOS requirements
+      const buffer = audioCtx.createBuffer(1, 1, 22050);
+      const source = audioCtx.createBufferSource();
+      source.buffer = buffer;
+      source.connect(audioCtx.destination);
+      source.start(0);
+      
+      // Remove this listener once successfully unlocked so it only runs once
+      document.removeEventListener('touchstart', unlockContext);
+    });
+  } else if (audioCtx.state === 'running') {
+    // Already unlocked, remove listener
+    document.removeEventListener('touchstart', unlockContext);
+  }
+}, { passive: true });
+</script>
 
 <div id="easterEggImage" class="easter-egg-overlay">
     <!-- Replace with your actual image URL -->

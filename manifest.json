@@ -1,6 +1,6 @@
 {
   "name": "10-Key Keypad",
-  "short_name": "Keypad",
+  "short_name": "10-Key",
   "start_url": "./index.html",
   "display": "standalone",
   "background_color": "#ffffff",
