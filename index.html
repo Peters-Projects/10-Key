@@ -535,7 +535,14 @@ function triggerEasterEgg() {
         totalDisplay.innerText = formatNumber(total);
         countDisplay.innerText = history.length;
 
-        enterBtn.disabled = currentInput === "";
+        // --- UPDATE ENTER KEY TEXT DYNAMICALLY ---
+        if (currentInput === "") {
+            enterBtn.innerText = "ENTER";
+            enterBtn.disabled = true;
+        } else {
+            enterBtn.innerText = `ENTER $${currentInput}`;
+            enterBtn.disabled = false;
+        }
 
         // Render History Items with individual inline action buttons
         historyList.innerHTML = "";
