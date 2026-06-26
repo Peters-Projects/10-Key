@@ -239,13 +239,6 @@ body {
         0 0px 0px #888888;
 	transform: translateY(4px); /* Moves the button down */
 }
-.number-btn.clear {
-	background-color: rgba(255, 59, 48, 0.15);
-    color: var(--danger);
-}
-.number-btn.clear:active {
-	background-color: rgba(255, 59, 48, 0.3);
-}
 /* Base style for the Enter key (unpressed state) */
 .enter-btn {
     background-color: Green;
@@ -279,6 +272,11 @@ body {
     background-color: Green;
     cursor: not-allowed;
 }
+/* This applies ONLY when the button is enabled (disabled is false) */
+.enter-btn:not(:disabled) {
+  font-size: 36px;
+  padding: 2px;
+}
 .clear-all-btn {
     background-color: Red;
     color: White;
@@ -302,6 +300,14 @@ body {
     	0 0 10px #8b0000,
     	0 0 20px #ff0000,
     	0 0 30px #ff6f61;
+}
+.clear-all-btn.clear {
+	background-color: rgba(255, 59, 48, 0.15);
+    color: var(--danger);
+        color: White;
+}
+.clear-all-btn.clear:active {
+	background-color: rgba(255, 59, 48, 0.3);
 }
 .delete-btn {
     background: none;
@@ -407,12 +413,13 @@ body {
 
         <button class="btn number-btn" onclick="press('.')">.</button>
         <button class="btn number-btn" onclick="press('0')">0</button>
-        <button class="btn number-btn clear" onclick="press('C')">C</button>
+    	<button class="btn number-btn backspace" onclick="press('B')">⌫</button>
 
         <button id="enter" class="btn enter-btn" onclick="submitEntry()">ENTER</button>
-    </div>
 
-    <button class="btn clear-all-btn" onclick="resetAll()">CLEAR ALL</button>
+    	<button class="btn clear-all-btn" onclick="resetAll()">CLEAR ALL</button>
+		<button class="btn clear-all-btn clear" onclick="press('C')">CLEAR ENTRY</button>
+	</div>
 </div>
 
 <script>
@@ -434,21 +441,24 @@ console.log("Script loaded!");
     const breakdownBox = document.getElementById("breakdown-box");
     const toggleViewBtn = document.getElementById("toggle-view-btn");
 
-    function press(char) {
-    	// play audible click sound after number key press
-    	playMechanicalClick();
+function press(char) {
+    // play audible click sound after number key press
+    playMechanicalClick();
 
-        if (char === 'C') {
-            currentInput = "";
-        } else if (char === '.') {
-            if (!currentInput.includes('.')) {
-                currentInput += currentInput === "" ? "0." : ".";
-            }
-        } else {
-            currentInput += char;
+    if (char === 'C') {
+        currentInput = "";
+    } else if (char === 'B') {
+        // NEW: Remove the very last character from the input string
+        currentInput = currentInput.slice(0, -1);
+    } else if (char === '.') {
+        if (!currentInput.includes('.')) {
+            currentInput += currentInput === "" ? "0." : ".";
         }
-        updateUI();
+    } else {
+        currentInput += char;
     }
+    updateUI();
+}
 
     function submitEntry() {
       	// Debug line: This will print the value to your browser's developer console
